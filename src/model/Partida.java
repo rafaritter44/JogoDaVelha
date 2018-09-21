@@ -2,6 +2,7 @@ package model;
 
 public class Partida {
     
+	private String nome;
     private Elemento[][] tabuleiro;
     private Jogador jogadorXis;
     private Jogador jogadorBolinha;
