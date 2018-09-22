@@ -59,7 +59,7 @@ public class ClienteTCP {
 			switch(inputDoUsuario.readLine()) {
 			case "1":
 				System.out.print(INFORME_SALA);
-				outputProServidor.writeBytes(inputDoUsuario.readLine());
+				outputProServidor.writeBytes(ServidorTCP.CRIAR + inputDoUsuario.readLine());
 				switch(respostaDoServidor = inputDoServidor.readLine()) {
 				case ServidorTCP.SALA_CRIADA:
 					System.out.println(respostaDoServidor);
@@ -80,7 +80,7 @@ public class ClienteTCP {
 				break;
 			case "2":
 				System.out.print(INFORME_SALA);
-				outputProServidor.writeBytes(inputDoUsuario.readLine());
+				outputProServidor.writeBytes(ServidorTCP.ENTRAR + inputDoUsuario.readLine());
 				switch(respostaDoServidor = inputDoServidor.readLine()) {
 				case ServidorTCP.ENTROU_SALA:
 					System.out.println(respostaDoServidor);
@@ -93,6 +93,8 @@ public class ClienteTCP {
 					System.out.print(respostaDoServidor = inputDoServidor.readLine());
 					break;
 				case ServidorTCP.SALA_NAO_EXISTE:
+				case ServidorTCP.SALA_CHEIA:
+					System.out.println(respostaDoServidor);
 					break;
 					default:
 						System.out.println(ERRO_RESPOSTA);
@@ -100,6 +102,7 @@ public class ClienteTCP {
 				break;
 				default:
 					System.out.println(OPCAO_INVALIDA);
+					outputProServidor.writeBytes(OPCAO_INVALIDA);
 			}
 		}
 		System.out.println("CONEXÃO ENCERRADA");
