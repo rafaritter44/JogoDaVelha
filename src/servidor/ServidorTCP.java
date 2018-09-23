@@ -18,14 +18,14 @@ public class ServidorTCP implements Runnable {
 	private Socket jogadorXis;
 	private Socket jogadorBolinha;
 	public static final String SALA_CRIADA = "Sala criada com sucesso";
-	public static final String SALA_JA_EXISTE = "Já existe uma sala com esse nome";
+	public static final String SALA_JA_EXISTE = "Ja existe uma sala com esse nome";
 	public static final String FIM_DE_JOGO = "Fim de jogo";
-	public static final String ENTROU_SALA = "Você entrou na sala";
-	public static final String SALA_NAO_EXISTE = "Essa sala não existe";
+	public static final String ENTROU_SALA = "Voce entrou na sala";
+	public static final String SALA_NAO_EXISTE = "Essa sala nao existe";
 	public static final String CRIAR = "CRIAR=";
 	public static final String ENTRAR = "ENTRAR=";
-	public static final String SALA_CHEIA = "Essa sala está cheia";
-	public static final String JOGADA_INVALIDA = "Jogada inválida";
+	public static final String SALA_CHEIA = "Essa sala esta cheia";
+	public static final String JOGADA_INVALIDA = "Jogada invalida! Por favor, informe uma jogada valida: ";
 	
 	private ServidorTCP(Socket jogadorXis) {
 		this.jogadorXis = jogadorXis;
@@ -42,9 +42,10 @@ public class ServidorTCP implements Runnable {
     public static void main(String[] args) throws IOException {
     	ServerSocket servidor = null;
         Scanner leitor = new Scanner(System.in);
-        System.out.print("Informe a porta: ");
+        System.out.print("----------SERVIDOR----------\nInforme a porta: ");
         try {
         	servidor = new ServerSocket(Integer.parseInt(leitor.nextLine()));
+        	System.out.println("Porta " + servidor.getLocalPort() + " aberta!");
         	tratamentoPrincipal(servidor);
         } catch(NumberFormatException excecao) {
         	System.out.println("Porta inválida");
@@ -59,30 +60,36 @@ public class ServidorTCP implements Runnable {
     	Map<String, ServidorTCP> salas = new HashMap<>();
     	while(true) {
     		Socket cliente = servidor.accept();
+    		System.out.println("Conexão realizada com o cliente " + cliente.getInetAddress().getHostAddress());
     		BufferedReader inputDoCliente = new BufferedReader(new InputStreamReader(cliente.getInputStream()));
-    		DataOutputStream outProCliente = new DataOutputStream(cliente.getOutputStream());
+    		DataOutputStream outputProCliente = new DataOutputStream(cliente.getOutputStream());
     		String mensagem = inputDoCliente.readLine();
     		if(mensagem.startsWith(CRIAR)) {
-    			String nomeDaSala = mensagem.substring(6);
+    			String nomeDaSala = mensagem.substring(CRIAR.length());
     			if(salas.containsKey(nomeDaSala)) {
-    				outProCliente.writeBytes(SALA_JA_EXISTE);
+    				outputProCliente.writeBytes(SALA_JA_EXISTE + "\n");
     			} else {
     				salas.put(nomeDaSala, new ServidorTCP(cliente));
-    				outProCliente.writeBytes(SALA_CRIADA);
+    				outputProCliente.writeBytes(SALA_CRIADA + "\n");
+    				System.out.println(SALA_CRIADA + " -- nome = \"" + nomeDaSala
+    						+ "\" / criador = " + cliente.getInetAddress().getHostAddress());
     			}
     		} else if(mensagem.startsWith(ENTRAR)) {
-    			String nomeDaSala = mensagem.substring(7);
+    			String nomeDaSala = mensagem.substring(ENTRAR.length());
     			if(salas.containsKey(nomeDaSala)) {
     				ServidorTCP sala = salas.get(nomeDaSala);
     				if(sala.salaCheia()) {
-    					outProCliente.writeBytes(SALA_CHEIA);
+    					outputProCliente.writeBytes(SALA_CHEIA + "\n");
     				} else {
+    					outputProCliente.writeBytes(ENTROU_SALA + "\n");
+    					System.out.println(cliente.getInetAddress().getHostAddress() +
+    							" entrou na sala \"" + nomeDaSala + "\"");
     					sala.setJogadorBolinha(cliente);
     					Thread partida = new Thread(sala);
     					partida.start();
     				}
     			} else {
-    				outProCliente.writeBytes(SALA_NAO_EXISTE);
+    				outputProCliente.writeBytes(SALA_NAO_EXISTE + "\n");
     			}    			
     		} else {
     			System.out.println("Mensagem inválida do cliente");
@@ -94,24 +101,22 @@ public class ServidorTCP implements Runnable {
 	public void run() {
 		try(BufferedReader inputDoXis = new BufferedReader(new InputStreamReader(jogadorXis.getInputStream()));
 				DataOutputStream outputProXis = new DataOutputStream(jogadorXis.getOutputStream());
-				BufferedReader inputDoBolinha = new BufferedReader(new InputStreamReader(jogadorXis.getInputStream()));
-		    	DataOutputStream outputProBolinha = new DataOutputStream(jogadorXis.getOutputStream())) {
+				BufferedReader inputDoBolinha = new BufferedReader(new InputStreamReader(jogadorBolinha.getInputStream()));
+		    	DataOutputStream outputProBolinha = new DataOutputStream(jogadorBolinha.getOutputStream())) {
 			Partida partida = new Partida();
 			@SuppressWarnings("resource") BufferedReader inputDoProximo = inputDoXis;
 			@SuppressWarnings("resource") DataOutputStream outputProProximo = outputProXis;
 			Optional<String> vencedor;
+			String exibicaoDoTabuleiro;
 			do {
-				outputProProximo.writeBytes(partida.enumeracaoDoTabuleiro() + "\n" +
-						partida.toString() + "\nInforme a posição desejada: ");
+				exibicaoDoTabuleiro = partida.enumeracaoDoTabuleiro() + "\n" + partida.toString();
+				outputProProximo.writeBytes(exibicaoDoTabuleiro + "Informe a jogada: \n");
 				boolean jogadaValida;
 				do {
 					if(!(jogadaValida = partida.jogar(inputDoProximo.readLine())))
-						outputProProximo.writeBytes(JOGADA_INVALIDA);
+						outputProProximo.writeBytes(exibicaoDoTabuleiro + JOGADA_INVALIDA + "\n");
 				} while(!jogadaValida);
-				if(!(vencedor = partida.vencedor()).isPresent()) {
-					outputProProximo.writeBytes(partida.toString() +
-							"\nAguarde a jogada do adversário...");
-				}
+				exibicaoDoTabuleiro = partida.enumeracaoDoTabuleiro() + "\n" + partida.toString();
 				if(inputDoProximo == inputDoXis) {
 					inputDoProximo = inputDoBolinha;
 					outputProProximo = outputProBolinha;
@@ -119,10 +124,12 @@ public class ServidorTCP implements Runnable {
 					inputDoProximo = inputDoXis;
 					outputProProximo = outputProXis;
 				}
+				vencedor = partida.vencedor();
 			} while(!vencedor.isPresent());
-			outputProXis.writeBytes(FIM_DE_JOGO);
-			outputProBolinha.writeBytes(FIM_DE_JOGO);
-			String resultado = "VENCEDOR: " + vencedor.get();
+			String fimDeJogo = exibicaoDoTabuleiro + FIM_DE_JOGO + "\n";
+			outputProXis.writeBytes(fimDeJogo);
+			outputProBolinha.writeBytes(fimDeJogo);
+			String resultado = "VENCEDOR: " + vencedor.get() + "\n";
 			outputProXis.writeBytes(resultado);
 			outputProBolinha.writeBytes(resultado);
 		} catch(IOException excecao) {

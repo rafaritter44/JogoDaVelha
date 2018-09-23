@@ -25,7 +25,17 @@ public class Partida {
     		return Optional.ofNullable(jogadorXis.getNome());
     	if(venceu(Elemento.BOLINHA))
     		return Optional.ofNullable(jogadorBolinha.getNome());
+    	if(velha())
+    		return Optional.ofNullable("Ninguem! Deu velha");
     	return Optional.empty();
+    }
+    
+    private boolean velha() {
+    	for(int i=0; i<3; i++)
+    		for(int j=0; j<3; j++)
+    			if(tabuleiro[i][j] == Elemento.VAZIO)
+    				return false;
+    	return true;
     }
     
     private boolean venceu(Elemento elemento) {

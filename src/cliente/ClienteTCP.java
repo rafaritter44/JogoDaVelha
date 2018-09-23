@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.Socket;
 import java.net.UnknownHostException;
+
 import servidor.ServidorTCP;
 
 public class ClienteTCP {
@@ -19,16 +20,16 @@ public class ClienteTCP {
 	
 	public static void main(String args[]) throws UnknownHostException, IOException {
 		try(BufferedReader inputDoUsuario = new BufferedReader(new InputStreamReader(System.in))) {
-			System.out.print("Informe a porta: ");
+			System.out.print("----------CLIENTE----------\nInforme a porta: ");
 			try {
 				porta = Integer.parseInt(inputDoUsuario.readLine());
 			} catch(NumberFormatException excecao) {
 				System.out.println("Porta inválida");
 				return;
 			}
+			menu(inputDoUsuario);
 			String opcao;
 			do {
-				menu(inputDoUsuario);
 				do {
 					System.out.print("Continuar jogando? (S/N): ");
 					switch(opcao = inputDoUsuario.readLine()) {
@@ -59,20 +60,22 @@ public class ClienteTCP {
 			switch(inputDoUsuario.readLine()) {
 			case "1":
 				System.out.print(INFORME_SALA);
-				outputProServidor.writeBytes(ServidorTCP.CRIAR + inputDoUsuario.readLine());
+				outputProServidor.writeBytes(ServidorTCP.CRIAR + inputDoUsuario.readLine() + "\n");
 				switch(respostaDoServidor = inputDoServidor.readLine()) {
 				case ServidorTCP.SALA_CRIADA:
-					System.out.println(respostaDoServidor);
-					System.out.print(respostaDoServidor = inputDoServidor.readLine());
+					System.out.println(respostaDoServidor + "\nAguarde outro jogador entrar...");
+					for(int i=0; i<7; i++)
+							System.out.println(inputDoServidor.readLine());
 					do {
-						outputProServidor.writeBytes(inputDoUsuario.readLine());
-						System.out.print(respostaDoServidor = inputDoServidor.readLine());
+						outputProServidor.writeBytes(inputDoUsuario.readLine() + "\n");
+						System.out.println("Aguarde...");
+						for(int i=0; i<7; i++)
+							System.out.println(respostaDoServidor = inputDoServidor.readLine());
 					} while(!respostaDoServidor.equals(ServidorTCP.FIM_DE_JOGO));
-					System.out.println(respostaDoServidor);
-					System.out.print(inputDoServidor.readLine());
+					System.out.println(inputDoServidor.readLine());
 					break;
 				case ServidorTCP.SALA_JA_EXISTE:
-					System.out.print(respostaDoServidor);
+					System.out.println(respostaDoServidor);
 					break;
 					default:
 						System.out.println(ERRO_RESPOSTA);
@@ -80,17 +83,19 @@ public class ClienteTCP {
 				break;
 			case "2":
 				System.out.print(INFORME_SALA);
-				outputProServidor.writeBytes(ServidorTCP.ENTRAR + inputDoUsuario.readLine());
+				outputProServidor.writeBytes(ServidorTCP.ENTRAR + inputDoUsuario.readLine() + "\n");
 				switch(respostaDoServidor = inputDoServidor.readLine()) {
 				case ServidorTCP.ENTROU_SALA:
-					System.out.println(respostaDoServidor);
-					System.out.print(inputDoServidor.readLine());
+					System.out.println(respostaDoServidor + "\nAguarde a jogada do oponente...");
+					for(int i=0; i<7; i++)
+						System.out.println(inputDoServidor.readLine());
 					do {
-						outputProServidor.writeBytes(inputDoUsuario.readLine());
-						System.out.print(respostaDoServidor = inputDoServidor.readLine());
+						outputProServidor.writeBytes(inputDoUsuario.readLine() + "\n");
+						System.out.println("Aguarde...");
+						for(int i=0; i<7; i++)
+							System.out.println(respostaDoServidor = inputDoServidor.readLine());
 					} while(!respostaDoServidor.equals(ServidorTCP.FIM_DE_JOGO));
-					System.out.println(respostaDoServidor);
-					System.out.print(respostaDoServidor = inputDoServidor.readLine());
+					System.out.println(inputDoServidor.readLine());
 					break;
 				case ServidorTCP.SALA_NAO_EXISTE:
 				case ServidorTCP.SALA_CHEIA:
@@ -102,7 +107,7 @@ public class ClienteTCP {
 				break;
 				default:
 					System.out.println(OPCAO_INVALIDA);
-					outputProServidor.writeBytes(OPCAO_INVALIDA);
+					outputProServidor.writeBytes(OPCAO_INVALIDA + "\n");
 			}
 		}
 		System.out.println("CONEXÃO ENCERRADA");
